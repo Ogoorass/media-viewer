@@ -1,1 +1,1 @@
-A cool web media viewer
+A cool browser media viewer
