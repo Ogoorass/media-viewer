@@ -1,47 +1,32 @@
+<?php
+$images_all = array_slice(scandir("content/"), 2); // get rid of "." and ".."
+$pages = intval(count($images_all) / 50 + 1);
+
+$page = $_GET["page"];
+if ($page == null) {
+  $page = 1;
+}
+$images_page = array_slice($images_all, ($page - 1) * 50, 50); // up to 50 images to display, based on the curent page
+
+?>
 <!DOCTYPE html>
 <html>
 
 <head>
-  <title>Podgl&aogon;d zdj&eogon;&cacute;</title>
+  <title>Media overview</title>
   <link rel="shortcut icon" href="https://skadlitwiniwracaja.ddns.net/Pictures/icon_alfa.ico">
   <script>
-    const images = <?php
-
-    $page = $_GET["page"];
-    if ($page == null) {
-      echo "[]";
-      goto end;
-    }
-
-    $cmd = exec("bash plikiZRozszerzeniem.sh");
-    $arr = explode(",", $cmd);
-
-    $pages = intval(count($arr) / 50) + 1;
-
-    echo "[";
-
-    for ($i = ((int) $page - 1) * 50; $i < (int) $page * 50 && $i < count($arr) - 1; $i++) {
-      echo "'" . $arr[$i] . "',";
-    }
-
-    echo "];";
-
-    end: ?>
-
-    let params = undefined;
     function main() {
-      params = new URLSearchParams(window.location.search);
-      if (!params.has("page")) {
-        params.set("page", "1");
-        window.location.search = params.toString();
-      }
+      const images = <?php echo json_encode($images_page) ?>;
+
+      const page = <?php echo $page ?>;
 
       const pageNum = document.querySelector("#page-num");
-      const text = document.createTextNode(params.get("page"));
+      const text = document.createTextNode(page);
       pageNum.appendChild(text);
 
       const extraInfo = document.querySelector("#extra-info");
-      const maxPage = (params.get("page") - 0) * 50;
+      const maxPage = (page - 0) * 50;
       const text2 = document.createTextNode((maxPage - 50) + "-" + maxPage);
       extraInfo.appendChild(text2);
       const container = document.querySelector("#grid-view");
@@ -49,13 +34,13 @@
       Object.entries(images).forEach(([key, val]) => {
         const item = document.createElement("a");
         item.classList = "item";
-        item.href = "podgląd.php?file=" + val;
+        item.href = "preview.php?file=" + val;
         const image = document.createElement("img");
         image.id = key;
-        image.src = val + "thumbnail.jpg";
+        image.src = "content/" + val + "/thumbnail.jpg";
 
         const icon = document.createElement("img");
-        icon.src = (val.endsWith(".jpg/") ? "/piotr/icons/image.svg" : "/piotr/icons/display.svg");
+        icon.src = (val.endsWith(".jpg") ? "/piotr/icons/image.svg" : "/piotr/icons/display.svg");
         icon.classList = "icon";
         item.appendChild(image);
         item.appendChild(icon);
@@ -63,37 +48,12 @@
       });
     }
 
-    function pageUp() {
-      params.set("page", params.get("page") - 0 + 1);
-      window.location.search = params.toString();
-    }
-
-    function pageDown() {
-      params.set("page", params.get("page") - 1);
-      window.location.search = params.toString();
-    }
   </script>
   <style>
     img {
       max-width: 90%;
       max-height: 90%;
     }
-
-    <?php if ($_GET["page"] == 1) {
-      echo '
-      .container > div:first-child { 
-        visibility: hidden;
-      }';
-    }
-    ?>
-
-    <?php if ($_GET["page"] == $pages) {
-      echo '
-      .container > div:last-child { 
-        visibility: hidden;
-      }';
-    }
-    ?>
 
     body {
       background-color: #212121;
@@ -107,13 +67,13 @@
       gap: 0.5%;
     }
 
-    .container>div:first-child>svg {
+    .container>a:first-child>svg {
       position: fixed;
       top: calc(50vh - (75px/2));
       left: calc(5% - 0);
     }
 
-    .container>div:last-child>svg {
+    .container>a:last-child>svg {
       position: fixed;
       top: calc(50vh - (75px/2));
       right: calc(5% - 0);
@@ -165,6 +125,10 @@
       right: 20px;
     }
 
+    .hidden {
+      visibility: hidden;
+    }
+
     #page-nav {
       position: fixed;
       display: flex;
@@ -207,10 +171,11 @@
         position: fixed;
         width: 75px;
         height: 75px;
+        min-height: 0;
         z-index: 2;
       }
 
-      .arrow>svg {
+      .arrow>a>svg {
         position: static !important;
       }
 
@@ -261,21 +226,29 @@
 
   <div class="container">
 
-    <div class="arrow" onclick="pageDown()">
+    <a class="arrow<?php if ($page == 1) {
+      echo " hidden";
+    } ?>" href="/piotr/?page=<?php echo $page - 1 ?>">
+
       <!-- arrow left -->
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
+      <svg id="arrow_left" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
         <path d="M561-240 320-481l241-241 43 43-198 198 198 198-43 43Z" />
       </svg>
-    </div>
+
+    </a>
 
     <div id="grid-view"></div>
 
-    <div class="arrow" onclick="pageUp()">
+    <a class="arrow<?php if ($page == $pages) {
+      echo " hidden";
+    } ?>" href="/piotr/?page=<?php echo $page + 1 ?>">
+
       <!-- arrow right -->
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
+      <svg id="arrow_right" xmlns=" http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
         <path d="M530-481 332-679l43-43 241 241-241 241-43-43 198-198Z" />
       </svg>
-    </div>
+    </a>
+
 
   </div>
 

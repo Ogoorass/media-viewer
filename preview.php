@@ -1,82 +1,63 @@
 <?php
-$cmd = exec("bash plikiZRozszerzeniem.sh");
-$arr = explode(",", $cmd);
-
+$images = array_slice(scandir("content/"), 2); // get rid of "." and ".."
 $image = $_GET["file"];
 
-$i = 0;
-foreach ($arr as $x) {
-  if ($x == $image) {
-    break;
+if ($image == null) {
+  $image = $images[0];
+  $key = 0;
+} else {
+  $key = array_search($image, $images);
+  if ($key === false) {
+    http_response_code(400);
+    exit();
   }
-  $i++;
 }
 
-$page = intval($i / 50) + 1;
+
+$page = intval(($key + 1) / 50) + 1;
+
+if ($key > 0) {
+  $previous_image = $images[$key - 1];
+}
+
+if ($key + 1 < count($images)) {
+  $next_image = $images[$key + 1];
+}
+
 ?>
 <!DOCTYPE html>
 <html>
 
 <head>
 
-  <title>Przedgl&aogon;darka zdj&eogon;&cacute;</title>
+  <title>Media preview</title>
+  <link rel="shortcut icon" href="https://skadlitwiniwracaja.ddns.net/Pictures/icon_alfa.ico">
+
   <script type="text/javascript">
-    let params = new URLSearchParams(window.location.search);
-    console.log(params.toString());
-
-    let filePath = "";
-
 
     function loadImage() {
-      if (params.has("file")) {
-        filePath = params.get("file");
-        let fileName = filePath.replace("content/", "").replace("/", "");
-        let image;
 
-        if (fileName.endsWith(".jpg")) {
-          image = document.createElement("img");
-          image.id = "image-img";
-          image.src = filePath + fileName;
-          image.onload = function () {
-            document.getElementById("loading_ico").style.display = "none";
-          }
-
-        } else if (fileName.endsWith(".mp4")) {
-          image = document.createElement("video");
-          image.id = "image-video";
-          image.src = filePath + fileName;
-          image.setAttribute("controls", "");
-          image.oncanplaythrough = function () {
-            document.getElementById("loading_ico").style.display = "none";
-          }
+      const fileName = "<?php echo $image ?>";
+      const filePath = "content/" + fileName + "/" + fileName;
+      let image;
+      if (fileName.endsWith(".jpg")) {
+        image = document.createElement("img");
+        image.id = "image-img";
+        image.src = filePath;
+        image.onload = function () {
+          document.getElementById("loading_ico").style.display = "none";
         }
-
-
-        document.getElementById("image").appendChild(image);
-
-      } else {
-        console.log("no file");
-        przewin();
-      }
-    }
-
-    function przewin(mode) {
-      var xhttp = new XMLHttpRequest()
-
-      console.log("przewin mode: " + mode);
-      xhttp.onload = function () {                     //czekanie na gotowosc
-        filePath = this.responseText;
-        console.log("response: " + this.responseText);
-
-        params.set("file", filePath);
-        console.log("params: " + params.toString());
-        window.location.search = params.toString();
+      } else if (fileName.endsWith(".mp4")) {
+        image = document.createElement("video");
+        image.id = "image-video";
+        image.src = filePath;
+        image.setAttribute("controls", "");
+        image.oncanplaythrough = function () {
+          document.getElementById("loading_ico").style.display = "none";
+        }
       }
 
-      var url = "przewin.php?currentFile=" + filePath + "&mode=" + mode;
-      xhttp.open("GET", url, true);
-      xhttp.send();
-
+      document.getElementById("image").appendChild(image);
     }
 
   </script>
@@ -135,14 +116,18 @@ $page = intval($i / 50) + 1;
       border-radius: 50px;
     }
 
-    .arrow>div>svg {
+    .arrow>svg {
       width: 100px;
       aspect-ratio: 1;
       fill: #FFF;
     }
 
-    .arrow>div>svg:hover {
+    .arrow>svg:hover {
       fill: #CCC;
+    }
+
+    .hidden {
+      visibility: hidden;
     }
 
     #input-image-name {
@@ -217,21 +202,21 @@ $page = intval($i / 50) + 1;
         height: 67vh;
       }
 
-      .container>div:first-child {
+      .container>a:first-child {
         position: absolute;
         bottom: -25%;
         left: calc(18% - 75px);
         width: 150px;
       }
 
-      .container>div:last-child {
+      .container>a:last-child {
         position: absolute;
         bottom: -25%;
         right: calc(15% - 75px);
         width: 150px;
       }
 
-      .arrow>div>svg {
+      .arrow>svg {
         width: 150px;
       }
 
@@ -279,13 +264,16 @@ $page = intval($i / 50) + 1;
 
 <body onload="loadImage()">
   <div class="container">
-    <div class="arrow">
-      <div onclick='przewin("0")' style="cursor: pointer;">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
-          <path d="M561-240 320-481l241-241 43 43-198 198 198 198-43 43Z" />
-        </svg>
-      </div>
-    </div>
+    <a class="arrow<?php if ($previous_image == null) {
+      echo " hidden";
+    } ?>" href="/piotr/preview.php?file=<?php echo $previous_image; ?>">
+
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
+        <path d="M561-240 320-481l241-241 43 43-198 198 198 198-43 43Z" />
+      </svg>
+
+
+    </a>
 
     <div id="image">
       <svg id="loading_ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
@@ -296,7 +284,7 @@ $page = intval($i / 50) + 1;
 
 
     <div id="grid-view">
-      <a href="<?php echo "/piotr/?page=" . $page ?>">
+      <a href="/piotr/?page=<?php echo $page; ?>">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
           <path
             d="M120-520v-320h320v320H120Zm0 400v-320h320v320H120Zm400-400v-320h320v320H520Zm0 400v-320h320v320H520ZM200-600h160v-160H200v160Zm400 0h160v-160H600v160Zm0 400h160v-160H600v160Zm-400 0h160v-160H200v160Zm400-400Zm0 240Zm-240 0Zm0-240Z" />
@@ -304,13 +292,15 @@ $page = intval($i / 50) + 1;
       </a>
     </div>
 
-    <div class="arrow">
-      <div onclick='przewin("1")' style="cursor: pointer;">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
-          <path d="M530-481 332-679l43-43 241 241-241 241-43-43 198-198Z" />
-        </svg>
-      </div>
-    </div>
+    <a class="arrow<?php if ($next_image == null) {
+      echo " hidden";
+    } ?>" href="/piotr/preview.php?file=<?php echo $next_image; ?>">
+
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
+        <path d="M530-481 332-679l43-43 241 241-241 241-43-43 198-198Z" />
+      </svg>
+
+    </a>
 
   </div>
 </body>
