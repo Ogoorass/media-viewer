@@ -14,7 +14,7 @@ if ($image == null) {
 }
 
 
-$page = intval(($key + 1) / 50) + 1;
+$page = intval(($key) / 50) + 1;
 
 if ($key > 0) {
   $previous_image = $images[$key - 1];
